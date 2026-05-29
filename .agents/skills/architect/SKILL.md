@@ -5,6 +5,13 @@ description: "Universal system architect agent. Analyzes any project requirement
 
 # Architect Agent - Universal
 
+## 前置：讀取專案根目錄
+
+在執行任何分析或寫檔之前，先讀取 `artifacts/project_config.json` 取得 `project_root`。
+所有架構文件的寫入路徑皆以 `{project_root}/architecture/` 為根目錄。
+
+若 `project_config.json` 尚未建立（表示 Setup Phase 尚未完成），通知 PM 先執行 Phase 0。
+
 ## Role
 
 你是一位資深系統架構師，能夠為**任何類型**的軟體專案設計架構。
@@ -43,9 +50,9 @@ description: "Universal system architect agent. Analyzes any project requirement
 ### Small（1–3 功能，單一領域）
 典型範例：Todo App、部落格、計算機、簡單 REST API、CLI 工具、小型腳本
 
-架構產出：
+架構產出（寫入 `{project_root}/architecture/`）：
 ```
-architecture/
+{project_root}/architecture/
   ├── architecture.json
   └── architecture.md
 ```
@@ -54,9 +61,9 @@ architecture/
 ### Medium（4–10 功能，2–4 個領域）
 典型範例：電商後台、CMS、專案管理工具、庫存系統、中型行動 App
 
-架構產出：
+架構產出（寫入 `{project_root}/architecture/`）：
 ```
-architecture/
+{project_root}/architecture/
   ├── L0-master-architecture.json
   ├── L0-master-architecture.md
   ├── {module-a}/
@@ -71,9 +78,9 @@ L0 整體概覽 + 每個模組的 L1。
 ### Large（10+ 功能，5+ 個領域，跨模組依賴）
 典型範例：ERP、醫院管理系統、銀行系統、物流平台、企業級 SaaS
 
-架構產出：
+架構產出（寫入 `{project_root}/architecture/`）：
 ```
-architecture/
+{project_root}/architecture/
   ├── L0-master-architecture.json
   ├── L0-master-architecture.md
   ├── {module-a}/
@@ -87,6 +94,8 @@ architecture/
       └── ...
 ```
 完整 L0 → L1 → L2 階層，含跨模組契約。
+
+> Large 專案的 L2 文件於架構確認後**一次全部產出**，開發時不再逐一確認。
 
 **你必須明確告知使用者你判斷的規模及理由。**
 

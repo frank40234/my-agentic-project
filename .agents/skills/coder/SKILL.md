@@ -13,6 +13,13 @@ You do NOT make architectural decisions - you follow the architecture strictly.
 
 ---
 
+## 前置：讀取專案根目錄
+
+在執行任何操作前，先讀取 `artifacts/project_config.json` 取得 `project_root`。
+所有 git 操作、檔案建立、測試執行，皆在 `project_root` 目錄下進行。
+
+---
+
 ## Workflow
 
 ### Step 1: Receive and Understand Task
@@ -27,6 +34,7 @@ Read everything carefully. If this is a retry, focus on understanding what went 
 ### Step 2: Create Branch
 
 ```bash
+cd {project_root}
 git checkout main
 git pull origin main 2>/dev/null
 git checkout -b {branch_name}
@@ -34,6 +42,7 @@ git checkout -b {branch_name}
 
 If the branch already exists (retry scenario):
 ```bash
+cd {project_root}
 git checkout {branch_name}
 ```
 
@@ -77,12 +86,14 @@ Before committing, verify ALL of the following:
 ### Step 7: Commit
 
 ```bash
+cd {project_root}
 git add .
 git commit -m "feat(TASK-{id}): {brief description}"
 ```
 
 If multiple logical changes, use multiple commits:
 ```bash
+cd {project_root}
 git commit -m "feat(TASK-{id}): add data model"
 git commit -m "feat(TASK-{id}): add API endpoints"
 git commit -m "test(TASK-{id}): add unit tests"
@@ -107,6 +118,7 @@ When receiving a retry request with error log:
 4. **Verify**: Ensure the fix addresses the error without introducing new issues
 5. **Re-commit**: Use a descriptive commit message
    ```bash
+   cd {project_root}
    git add .
    git commit -m "fix(TASK-{id}): fix {brief description of the fix}"
    ```

@@ -19,18 +19,20 @@ alwaysApply: true
 |--------|---------|------|
 | HITL-0a | 架構草案產出後 | 確認規劃方向，此時**尚未寫入任何檔案** |
 | HITL-0b | 架構文件寫入後 | 確認已產出的架構文件內容 |
-| HITL-1  | Large 專案各模組 L2 設計完成後 | 批次確認同一模組所有子模組設計 |
 | HITL-2  | 同一任務連續失敗 3 次 | 強制人工介入除錯或決定跳過 |
 
 ## 檔案規範
-- 架構文件：`architecture/`
+所有路徑皆以 `artifacts/project_config.json` 中的 `project_root` 為根目錄。
+
+- 專案設定：`{project_root}/artifacts/project_config.json`
+- 架構文件：`{project_root}/architecture/`
   - 每個 JSON 架構文件都必須有對應的 `.md` 人類可讀版本
-- 任務佇列：`artifacts/task_queue.json`
-- 進度日誌：`artifacts/progress_log.json`
-- 最終系統狀態：`artifacts/system_state.json`（含未完成功能、技術債、擴充點）
-- 架構索引：`architecture/ARCHITECTURE-INDEX.md`（medium/large 專案）
-- 原始碼：`src/`（或框架慣例）
-- 測試：`tests/`（或框架慣例）
+- 任務佇列：`{project_root}/artifacts/task_queue.json`
+- 進度日誌：`{project_root}/artifacts/progress_log.json`
+- 最終系統狀態：`{project_root}/artifacts/system_state.json`（含未完成功能、技術債、擴充點）
+- 架構索引：`{project_root}/architecture/ARCHITECTURE-INDEX.md`（medium/large 專案）
+- 原始碼：`{project_root}/src/`（或框架慣例）
+- 測試：`{project_root}/tests/`（或框架慣例）
 
 ## 安全機制
 - 同一任務連續失敗 3 次，強制觸發 HITL-2 人工介入
@@ -38,6 +40,7 @@ alwaysApply: true
 - 前一任務的對話歷史**不得**帶入新任務
 - 所有架構變更需人工核准後才能繼續
 - **架構草案確認（HITL-0a）必須在寫入任何架構文件前完成**
+- **Large 專案的 L2 子模組不需逐一確認，一次全部產出後直接進入開發**
 
 ## 品質關卡
 - 每個任務必須包含自動化測試

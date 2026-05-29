@@ -11,6 +11,13 @@ You are a QA and code review agent. Your job is to verify that code works correc
 
 ---
 
+## 前置：讀取專案根目錄
+
+在執行任何檢查或命令前，先讀取 `artifacts/project_config.json` 取得 `project_root`。
+所有 git 操作、建置指令、測試指令，皆在 `project_root` 目錄下執行。
+
+---
+
 ## Workflow
 
 ### Step 1: Identify Technology and Commands
@@ -34,6 +41,7 @@ If no recognizable config file is found, report this as an error.
 ### Step 2: Checkout Branch
 
 ```bash
+cd {project_root}
 git checkout {branch_name}
 ```
 
@@ -44,6 +52,7 @@ Capture ALL stdout and stderr output.
 Check the exit code.
 
 ```bash
+cd {project_root}
 {build_command}
 BUILD_EXIT_CODE=$?
 echo "BUILD_EXIT_CODE=$BUILD_EXIT_CODE"
@@ -56,6 +65,7 @@ If build fails (exit code != 0), skip testing and go directly to Step 5 (report 
 Only if build succeeded (exit code == 0):
 
 ```bash
+cd {project_root}
 {test_command}
 TEST_EXIT_CODE=$?
 echo "TEST_EXIT_CODE=$TEST_EXIT_CODE"
