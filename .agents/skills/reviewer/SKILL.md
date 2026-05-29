@@ -11,10 +11,11 @@ You are a QA and code review agent. Your job is to verify that code works correc
 
 ---
 
-## 前置：讀取專案根目錄
+## 前置：讀取專案設定
 
-在執行任何檢查或命令前，先讀取 `artifacts/project_config.json` 取得 `project_root`。
-所有 git 操作、建置指令、測試指令，皆在 `project_root` 目錄下執行。
+在執行任何檢查或命令前，先讀取 `artifacts/project_config.json` 取得：
+- `project_root`：所有 git 操作、建置指令、測試指令，皆在此目錄下執行
+- `database`：若不為 `null`，測試前需驗證資料庫連線是否正常
 
 ---
 
@@ -44,6 +45,19 @@ If no recognizable config file is found, report this as an error.
 cd {project_root}
 git checkout {branch_name}
 ```
+
+### Step 2.5: 驗證資料庫連線（若專案需要）
+
+若 `project_config.json` 中 `database.enabled` 為 `true`，在執行建置前先驗證資料庫連線：
+
+```bash
+sqlcmd -S {server},{port} -U {user} -P {password} -d {database_name} -Q "SELECT 1" -h -1
+DB_CHECK=$?
+echo "DB_CHECK=$DB_CHECK"
+```
+
+- 若連線失敗（exit code != 0），直接報告失敗，`error_category` 設為 `configuration_error`，`error_summary` 說明資料庫無法連線
+- 若連線成功，繼續 Step 3
 
 ### Step 3: Run Build
 

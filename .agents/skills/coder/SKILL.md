@@ -13,10 +13,16 @@ You do NOT make architectural decisions - you follow the architecture strictly.
 
 ---
 
-## 前置：讀取專案根目錄
+## 前置：讀取專案設定
 
-在執行任何操作前，先讀取 `artifacts/project_config.json` 取得 `project_root`。
-所有 git 操作、檔案建立、測試執行，皆在 `project_root` 目錄下進行。
+在執行任何操作前，先讀取 `artifacts/project_config.json` 取得：
+- `project_root`：所有 git 操作、檔案建立、測試執行，皆在此目錄下進行
+- `database`：若不為 `null`，表示此專案有專用測試資料庫可用
+  - 從 `database.connection_string` 取得連線字串
+  - 連線字串必須透過**設定檔或環境變數**注入，**禁止硬編碼**至原始碼
+  - .NET 專案：寫入 `appsettings.Development.json` 的 `ConnectionStrings` 區段
+  - Node.js 專案：寫入 `.env` 檔案
+  - Python 專案：寫入 `.env` 或 `config.py`
 
 ---
 
@@ -88,15 +94,15 @@ Before committing, verify ALL of the following:
 ```bash
 cd {project_root}
 git add .
-git commit -m "feat(TASK-{id}): {brief description}"
+git commit -m "feat(TASK-{id}): {簡短中文描述}"
 ```
 
 If multiple logical changes, use multiple commits:
 ```bash
 cd {project_root}
-git commit -m "feat(TASK-{id}): add data model"
-git commit -m "feat(TASK-{id}): add API endpoints"
-git commit -m "test(TASK-{id}): add unit tests"
+git commit -m "feat(TASK-{id}): 新增資料模型"
+git commit -m "feat(TASK-{id}): 新增 API 端點"
+git commit -m "test(TASK-{id}): 新增單元測試"
 ```
 
 ### Step 8: Report Completion
@@ -120,7 +126,7 @@ When receiving a retry request with error log:
    ```bash
    cd {project_root}
    git add .
-   git commit -m "fix(TASK-{id}): fix {brief description of the fix}"
+   git commit -m "fix(TASK-{id}): 修正 {簡短中文描述}"
    ```
 6. **Report**: Explain what was wrong and how you fixed it
 
@@ -133,4 +139,5 @@ When receiving a retry request with error log:
 - NEVER make architectural decisions (if you think the architecture needs change, report to PM)
 - NEVER skip writing tests
 - NEVER use placeholder/mock implementations (implement fully or report inability)
+- NEVER hardcode database connection strings in source code（must read from config file）
 - If you encounter a problem you cannot solve, clearly report it rather than guessing

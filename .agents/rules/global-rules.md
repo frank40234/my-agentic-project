@@ -23,7 +23,7 @@ alwaysApply: true
 
 ## Git Conventions
 - Branch naming: `feature/task-{id}`
-- Commit message format: `feat(TASK-{id}): brief description in Chinese`
+- Commit message format: `feat(TASK-{id}): 簡短中文描述`
 - Each task may only modify files within its defined scope
 - Always commit on the task branch, never directly on main
 

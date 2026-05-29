@@ -6,26 +6,50 @@ description: "Universal AI Coding Agentic development cycle. Automatically adapt
 
 ---
 
-## Phase 0: 專案初始化
+## Phase 0: 需求收集與架構規劃
 
-### Step 0.1: 確認專案位置
+### Step 0.1: 收集需求
+請使用者描述專案。**不預設**任何特定技術、框架或專案類型。
+若需求模糊或不完整，提出澄清問題。
 
-詢問使用者以下兩個問題：
+### Step 0.2: 產生架構草案（暫不寫檔）
+呼叫 `architect` skill。Architect 將：
+1. 分析需求
+2. 判斷專案規模（small / medium / large）
+3. 決定專案名稱（英文小寫 + 連字號）
+4. 以**純文字摘要**呈現規劃草案（專案名稱、模組清單、技術決策、預計文件清單）
+5. **不寫入任何檔案**
 
-**問題一：專案要建立在哪裡？**
-> 「請選擇專案建立方式：
-> A）指定完整路徑（例如：D:\Projects\MyApp）
-> B）在當前目錄下自動建立以專案名稱命名的子目錄
+### Step 0.3: 人工確認草案（HITL-0a）
+**停止**。Architect 已呈現草案，等待使用者確認：
+> 「以上為架構規劃草案，請確認。輸入 **approve** 開始建立專案，或提供修改意見。」
+
+- 若核准 → 進入 Step 0.4
+- 若提供意見 → Architect 修改草案後重新呈現
+
+---
+
+## Phase 1: 專案初始化（草案確認後執行）
+
+> ⚠️ 此階段必須在 HITL-0a 核准後才能執行。
+
+### Step 1.1: 確認專案位置
+
+詢問使用者：
+
+> 「專案 **{project_name}** 要建立在哪裡？
+> A）指定完整路徑（例如：D:\Projects\my-app）
+> B）在當前目錄下自動建立 `{project_name}` 子目錄
 >
 > 請輸入路徑（選 A），或輸入 **B** 使用當前目錄：」
 
-- 若選 A：使用使用者提供的完整路徑作為 `project_root`
-- 若選 B：`project_root` = `{當前目錄}/{project_name}`（專案名稱於 Step 1.1 確認後補入）
+- 若選 A：`project_root` = 使用者提供的完整路徑
+- 若選 B：`project_root` = `{當前目錄}/{project_name}`
 
-**問題二：是否需要初始化 Git？**
+詢問是否初始化 Git：
 > 「是否在此目錄初始化 Git Repository？（預設 Yes）」
 
-### Step 0.2: 建立專案根目錄
+### Step 1.2: 建立專案根目錄
 
 ```bash
 # 建立目錄（若不存在）
@@ -37,55 +61,71 @@ git init
 git commit --allow-empty -m "chore: init project repository"
 ```
 
-### Step 0.3: 寫入專案設定檔
+### Step 1.3: 寫入專案設定檔
 
-在 `{project_root}/artifacts/project_config.json` 寫入以下內容：
+在 `{project_root}/artifacts/project_config.json` 寫入：
 
 ```json
 {
   "project_name": "{project_name}",
   "project_root": "{絕對路徑}",
   "git_initialized": true,
-  "created_at": "ISO-8601 timestamp"
+  "created_at": "ISO-8601 timestamp",
+  "database": null
 }
 ```
 
-> ⚠️ **所有後續產生的檔案（架構書、artifacts、源碼、測試）皆以 `project_root` 為根目錄。**
+> `database` 欄位在 Step 1.4 中根據需求決定是否填入。
 
----
+### Step 1.4: 建立測試資料庫（若專案需要）
 
-## Phase 1: 需求收集與架構規劃
+檢查已核准的架構草案中 `tech_stack.database` 是否有指定資料庫。
 
-### Step 1.1: 收集需求
-請使用者描述專案。**不預設**任何特定技術、框架或專案類型。
-若需求模糊或不完整，提出澄清問題。
+**若專案不需要資料庫**（前端 SPA、CLI 工具等）：跳過此步驟，`database` 維持 `null`。
 
-### Step 1.2: 產生架構草案（暫不寫檔）
-呼叫 `architect` skill。Architect 將：
-1. 分析需求
-2. 判斷專案規模（small / medium / large）
-3. 以**純文字摘要**呈現規劃草案（模組清單、技術決策、預計文件清單）
-4. **不寫入任何檔案**
+**若專案需要資料庫**：
 
-### Step 1.3: 人工確認草案（HITL-0a）
-**停止**。Architect 已呈現草案，等待使用者確認：
-> 「以上為架構規劃草案，請確認。輸入 **approve** 開始產生架構文件，或提供修改意見。」
+1. 讀取 `.agents/config/database.json` 取得 MSSQL 伺服器連線資訊
+2. 若檔案不存在或密碼仍為預設值，**停止**並告知使用者：
+   > 「需要資料庫但尚未設定連線資訊。請編輯 `.agents/config/database.json` 填入 MSSQL 伺服器帳密，完成後輸入 **done** 繼續。」
+3. 建立測試資料庫：
 
-- 若核准 → 進入 Step 1.4
-- 若提供意見 → Architect 修改草案後重新呈現
+```bash
+# 資料庫命名規則：agent_test_{project_name}（連字號替換為底線）
+sqlcmd -S {server},{port} -U {user} -P {password} -Q "IF NOT EXISTS (SELECT name FROM sys.databases WHERE name = 'agent_test_{project_name}') CREATE DATABASE [agent_test_{project_name}]"
+```
 
-### Step 1.4: 產生架構文件
-Architect 依核准的草案，將所有架構文件寫入 **`{project_root}/architecture/`** 目錄：
+4. 更新 `project_config.json` 的 `database` 欄位：
+
+```json
+{
+  "database": {
+    "enabled": true,
+    "name": "agent_test_{project_name}",
+    "server": "{server}",
+    "port": 1433,
+    "connection_string": "Server={server},{port};Database=agent_test_{project_name};User Id={user};Password={password};TrustServerCertificate=True"
+  }
+}
+```
+
+> ⚠️ **連線字串僅存在 `project_config.json` 中，Coder 必須從此檔讀取，禁止硬編碼至原始碼。**
+
+### Step 1.5: 產生架構文件
+
+Architect 依已核准的草案，將所有架構文件寫入 **`{project_root}/architecture/`** 目錄：
 - Small：產生單一 `architecture.json` + `architecture.md`
 - Medium：產生 L0 + 各模組 L1（JSON + Markdown）
 - Large：產生 L0 + 各模組 L1 + 各模組所有 L2（JSON + Markdown），**同一模組的 L2 一次全部產出**
 
-### Step 1.5: 人工確認文件（HITL-0b）
-**停止**。呈現已產生的文件清單摘要：
-> 「架構文件已產生完畢，請確認。輸入 **approve** 繼續開發，或提供修改意見。」
+### Step 1.6: 人工確認文件（HITL-0b）
+**停止**。呈現已產生的文件清單摘要（若有建立資料庫，一併列出）：
+> 「架構文件已產生至 `{project_root}/architecture/`，請確認。輸入 **approve** 繼續開發，或提供修改意見。」
 
 - 若核准 → 進入 Phase 2（Medium/Large）或 Phase 3（Small）
 - 若提供意見 → Architect 修改相關文件後重新呈現
+
+> ⚠️ **所有後續產生的檔案（artifacts、源碼、測試）皆以 `project_root` 為根目錄。**
 
 ---
 
@@ -193,6 +233,25 @@ PM 將當前任務標記為 `"done"`（或 `"skipped"`）於 `{project_root}/art
 3. 產生 `{project_root}/artifacts/system_state.json`（含未完成項目、技術債、擴充點）
 4. 產生 `{project_root}/architecture/ARCHITECTURE-INDEX.md`（medium/large）
 
-### Step 7.2: 通知完成
+### Step 7.2: 測試資料庫處理
+
+若 `project_config.json` 中 `database.enabled` 為 `true`：
+
+詢問使用者：
+> 「測試資料庫 `{database_name}` 要如何處理？
+> A）**保留**（供後續二次開發或手動測試使用）
+> B）**刪除**（執行 DROP DATABASE）
+>
+> 請選擇 A 或 B：」
+
+- 若選 A：在 `system_state.json` 中記錄資料庫名稱與連線資訊，供未來 AI 二次開發使用
+- 若選 B：
+
+```bash
+sqlcmd -S {server},{port} -U {user} -P {password} -Q "DROP DATABASE [{database_name}]"
+```
+
+### Step 7.3: 通知完成
 告知使用者：「專案開發完成！」
 列出所有產生的文件，並標示任何被跳過的任務或已知問題。
+若測試資料庫已保留，提醒使用者資料庫名稱與連線方式。

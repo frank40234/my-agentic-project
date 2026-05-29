@@ -24,7 +24,12 @@ alwaysApply: true
 ## 檔案規範
 所有路徑皆以 `artifacts/project_config.json` 中的 `project_root` 為根目錄。
 
-- 專案設定：`{project_root}/artifacts/project_config.json`
+### 全域設定（所有專案共用）
+- DB 伺服器連線：`.agents/config/database.json`（已加入 `.gitignore`，含帳密）
+- DB 連線範本：`.agents/config/database.example.json`（版控用，不含真實帳密）
+
+### 專案級檔案
+- 專案設定：`{project_root}/artifacts/project_config.json`（含 `database` 連線資訊）
 - 架構文件：`{project_root}/architecture/`
   - 每個 JSON 架構文件都必須有對應的 `.md` 人類可讀版本
 - 任務佇列：`{project_root}/artifacts/task_queue.json`

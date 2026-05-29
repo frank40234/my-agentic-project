@@ -1,0 +1,9 @@
+{
+  "description": "範本檔案，請複製為 database.json 並填入實際連線資訊。database.json 已加入 .gitignore，不會被版控。",
+  "server": "localhost",
+  "port": 1433,
+  "user": "sa",
+  "password": "在此輸入密碼",
+  "trust_server_certificate": true,
+  "connection_timeout": 30
+}
