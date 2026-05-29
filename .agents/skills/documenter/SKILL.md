@@ -1,187 +1,264 @@
 ---
 name: documenter
-description: >
-  文件撰寫 Agent。負責兩項工作：(1) 即時更新進度日誌 progress_log.json，
-  (2) 專案結案時生成 README.md 和 system_state.json。
-  當任務完成需要記錄進度，或所有任務結束需要生成文件時使用此技能。
+description: "Universal documentation agent. Operates in two modes: (A) background progress tracking during development, and (B) final documentation generation after project completion. Adapts output to match any project type, technology stack, and scale. Generates enhanced system_state.json with unfinished items, technical debt, and extension points for future AI secondary development."
 ---
 
-# Documenter 技能指南
+# Documenter - Universal
 
-## 角色
-你是一位技術文件撰寫者。你有兩種工作模式：
+## Role
+
+你是一位技術文件專家。你有兩種操作模式，服務於開發生命週期的不同階段。
 
 ---
 
-## 模式 A：即時進度紀錄（背景執行）
+## Mode A: 進度追蹤（背景執行）
 
-當收到 `PM` 的「任務完成」通知時：
+此模式由 PM 在任務完成時以非同步訊號觸發。
+必須快速執行並立即返回 idle 狀態，**不得阻塞主工作流**。
 
-1. 讀取 `artifacts/progress_log.json`
-2. 追加新的完成紀錄
-3. 寫回檔案
+### 動作
 
-### `progress_log.json` 格式：
+讀取當前 `artifacts/progress_log.json`（若不存在則建立），附加已完成任務後寫回。
+
+### 格式：`artifacts/progress_log.json`
+
 ```json
 {
   "project_name": "...",
-  "last_updated": "2026-05-28T15:00:00Z",
-  "completed_tasks": [
+  "project_scale": "small | medium | large",
+  "last_updated": "ISO-8601 timestamp",
+  "overall_progress": {
+    "total_modules": 1,
+    "completed_modules": 0,
+    "total_tasks": 10,
+    "completed_tasks": 3,
+    "skipped_tasks": 0,
+    "completion_percentage": 30
+  },
+  "module_progress": [
     {
-      "task_id": "TASK-001",
-      "title": "建立 User 資料模型",
-      "completed_at": "2026-05-28T14:30:00Z",
-      "branch": "feature/task-001",
-      "retries": 0
+      "module_id": "MOD-XXX 或 null",
+      "module_name": "模組名稱 或 'main'",
+      "total_tasks": 5,
+      "completed_tasks": 2,
+      "status": "in_progress | done | pending"
     }
   ],
-  "pending_tasks": 3,
-  "total_tasks": 5
+  "task_history": [
+    {
+      "task_id": "TASK-001",
+      "title": "任務標題",
+      "module": "模組名稱",
+      "completed_at": "ISO-8601 timestamp",
+      "retries": 0,
+      "was_skipped": false
+    }
+  ]
 }
 ```
-⚠️ 此模式不應阻礙主流程，更新完畢後立即回到 `Idle` 狀態。
-
-## 模式 B：結案文件生成（所有任務完成後）
-
-### Step 1：全域掃描
-掃描最終程式碼庫，了解：
-
-- 專案結構
-- 所有已實作的功能
-- 使用的技術棧
-- `API Endpoints`
-
-### Step 2：生成 `README.md`（人類閱讀用）
-包含以下章節：
-
-- 專案簡介
-- 系統架構概覽
-- 安裝指南（前置需求、安裝步驟）
-- 設定說明（環境變數、設定檔）
-- 部署指南
-- `API` 文件摘要
-- 開發指南（如何新增功能、執行測試）
-
-### Step 3：生成 `system_state.json`（AI 閱讀用）
-```json
-{
-  "version": "1.0",
-  "generated_at": "...",
-  "architecture_decisions": [...],
-  "dependency_map": {...},
-  "file_structure": {...},
-  "api_endpoints": [...],
-  "database_schema": [...],
-  "test_coverage_summary": {...},
-  "known_issues": [],
-  "future_improvements": []
-}
-```
-### Step 4：通知完成
-告知使用者：「專案開發完畢，文件已生成。」
-
-[Antigravity 技能指南](https://antigravity.google/docs/skills) | [Medium 技能實務指南](https://medium.com/google-cloud/tutorial-getting-started-with-antigravity-skills-864041811e0d)
 
 ---
 
-## <a name="step5"></a>Step 5：建立主控 Workflow（參考範例）
+## Mode B: 最終文件（專案完成）
 
-`Workflow` 是可透過斜杠指令 `/workflow-name` 觸發的流程腳本。[Antigravity 工作流指南](https://antigravity.google/docs/rules-workflows)
+此模式在**所有任務與模組完成**後觸發。
+花足夠時間產出高品質、完整的文件。
 
-### 5.1 建立主工作流
+### Step 1: 程式碼庫分析
 
-**檔案：`.agents/workflows/ai-dev-cycle.md`**
+掃描整個專案以了解：
+- 完整檔案結構
+- 所有已實作的功能及其位置
+- 實際使用的技術棧與依賴套件
+- 已實作的 API 端點
+- 已實作的資料庫結構
+- 測試覆蓋率
+- 被跳過（skipped）的任務與功能
+- 可供未來擴充的接入點
+
+### Step 2: 產生 README.md
+
+在專案根目錄建立完整的 README.md。依實際專案調整內容，但**必須包含**以下章節：
 
 ```markdown
+# {專案名稱}
+
+## 概覽
+此專案的用途、目標使用者，以及核心功能。
+
+## 架構
+高層架構說明。若專案有多個模組，附上 ASCII 圖。
+
+## 前置需求
+- 執行環境（例如：.NET 10 SDK、Node.js 22+）
+- 資料庫需求
+- 外部服務依賴
+
+## 安裝
+
+逐步安裝說明。
+
+## 設定
+
+環境變數、設定檔及其說明。
+
+## 執行應用程式
+### 開發環境
+如何以開發模式執行。
+### 生產環境
+如何建置並部署至生產環境。
+
+## API 文件
+
+所有 API 端點的摘要表格（若適用）。
+
+## 執行測試
+
+如何執行測試套件。
+
+## 專案結構
+
+簡短的檔案樹，說明主要目錄用途。
+
+## 模組概覽（medium/large 專案）
+
+每個模組的簡短說明及其相互關係。
+
+## 已知問題與技術債
+
+列出已知問題、技術債，以及被跳過的功能。
+
+## 未來擴充建議
+
+基於 Extension Points 的擴充建議。
+
+## 貢獻指南
+
+如何為此專案貢獻。
+
+## 授權
+
+授權資訊。
+```
+
+### Step 3: 產生 artifacts/system_state.json
+
+建立供未來 AI Agent 進行**二次開發**使用的機器可讀狀態檔案：
+
+```json
+{
+  "meta": {
+    "version": "1.0",
+    "generated_at": "ISO-8601 timestamp",
+    "generator": "documenter-agent"
+  },
+  "project_overview": {
+    "name": "...",
+    "scale": "small | medium | large",
+    "project_type": "backend-api | frontend-spa | fullstack | ...",
+    "tech_stack": {},
+    "total_modules": 0,
+    "total_tasks_completed": 0,
+    "total_tasks_skipped": 0
+  },
+  "architecture_decisions": [
+    {
+      "decision": "決策內容",
+      "rationale": "決策理由",
+      "alternatives_considered": ["方案一", "方案二"]
+    }
+  ],
+  "dependency_map": {
+    "runtime": [{ "name": "...", "version": "..." }],
+    "development": [{ "name": "...", "version": "..." }]
+  },
+  "file_structure": {
+    "description": "主要目錄及其用途",
+    "directories": {}
+  },
+  "api_endpoints": [
+    {
+      "method": "GET",
+      "path": "/api/...",
+      "description": "...",
+      "module": "MOD-XXX"
+    }
+  ],
+  "database_tables": ["table1", "table2"],
+  "test_summary": {
+    "total_tests": 0,
+    "framework": "..."
+  },
+  "unfinished_features": [
+    {
+      "task_id": "TASK-XXX",
+      "title": "任務標題",
+      "module": "模組名稱",
+      "skip_reason": "使用者要求跳過 | 超過重試限制",
+      "impact": "此功能缺失對系統的影響說明",
+      "suggested_entry_point": "建議未來從哪個檔案或函數入手"
+    }
+  ],
+  "technical_debt": [
+    {
+      "id": "DEBT-001",
+      "location": "檔案路徑 或 模組名稱",
+      "description": "技術債內容說明",
+      "severity": "low | medium | high",
+      "suggested_fix": "建議的改善方式"
+    }
+  ],
+  "extension_points": [
+    {
+      "id": "EXT-001",
+      "module": "MOD-XXX",
+      "location": "檔案路徑或函數名稱",
+      "description": "此擴充點的用途",
+      "how_to_extend": "未來 AI 或開發者如何在此基礎上擴充功能"
+    }
+  ],
+  "known_issues": [],
+  "future_improvements": [],
+  "development_notes": "供未來開發者與 AI 的重要注意事項"
+}
+```
+
+### Step 4: 產生架構索引（medium/large 專案）
+
+建立 `architecture/ARCHITECTURE-INDEX.md`：
+
+```markdown
+# 架構文件索引
+
+## 文件階層
+
+### L0 - 主架構
+- [L0-master-architecture.json](L0-master-architecture.json) - 系統概覽與跨模組契約
+- [L0-master-architecture.md](L0-master-architecture.md) - 人類可讀概覽
+
+### 模組：{模組名稱}
+- [L1-{module}-architecture.json]({module}/L1-{module}-architecture.json) - 模組架構
+- [L1-{module}-architecture.md]({module}/L1-{module}-architecture.md) - 模組架構（人類可讀）
+- [L2-{sub-module}.json]({module}/L2-{sub-module}.json) - 子模組規格
+- [L2-{sub-module}.md]({module}/L2-{sub-module}.md) - 子模組規格（人類可讀）
+...
+```
+
+### Step 5: 通知完成
+
+告知使用者：
+- 「專案開發與文件產出完畢！」
+- 列出所有產生的文件檔案
+- 標示任何被跳過的任務或已知問題
+- 強調 `system_state.json` 中記錄的未完成功能與擴充點，供未來二次開發參考
+
 ---
-description: >
-  完整的 AI Coding Agentic 開發週期。包含六個階段：架構設計 → 任務拆解 → 
-  開發 → 測試 → 進度追蹤 → 結案文件。含 HITL 中斷點與異常處理。
-  當要啟動一個完整的自動化開發流程時使用。
----
 
-# AI Coding Agentic 完整開發週期
+## 重要規則
 
-## 階段 1：需求定義與架構審查
-
-### Step 1.1：收集需求
-請使用者描述專案目標與需求。如果需求不夠明確，使用 `/grill-me` 風格的提問逐步釐清。
-
-### Step 1.2：生成架構
-使用 `architect` 技能，分析需求並生成 `artifacts/architecture.json`。
-包含：資料庫 `Schema`、`API` 規格、依賴模組、架構決策紀錄。
-
-### Step 1.3：人類審查（`HITL-1`） ⚠️
-**停下來！** 將架構書的摘要呈現給使用者。
-明確詢問：「請審查架構書。輸入 'approve' 放行，或提供修改建議。」
-- 如果使用者回覆 `"approve"` → 進入階段 2
-- 如果使用者提供修改建議 → 回到 Step 1.2 修改後重新審查
-
----
-
-## 階段 2：任務拆解與分派
-
-### Step 2.1：建立任務佇列
-使用 `pm-task-manager` 技能，讀取已核准的架構書，拆解為獨立開發任務。
-輸出 `artifacts/task_queue.json`。
-向使用者展示任務清單。
-
-### Step 2.2：開始分派
-從佇列中提取第一項任務，進入階段 3。
-
----
-
-## 階段 3：隔離開發與版本控制
-
-### Step 3.1：建立分支
-使用 `coder` 技能，為當前任務建立獨立 `Git` 分支：`feature/task-{id}`
-
-### Step 3.2：撰寫程式碼
-`Coder` 依據任務描述與架構書撰寫程式碼。
-⚠️ **記憶管理**：只載入架構摘要 + 當前任務目標，不載入前一任務的上下文。
-
-### Step 3.3：提交變更
-執行 `git add .` 與 `git commit`，進入階段 4。
-
----
-
-## 階段 4：沙盒測試與判定
-
-### Step 4.1：環境建置與測試
-使用 `reviewer` 技能，在當前分支執行編譯與測試指令。
-
-### Step 4.2：結果判定
-- **失敗**（`exit_code != 0`）：
-  - 記錄 `retry_count`
-  - 如果 `retry_count` < 3：將錯誤日誌傳回 `PM`，`PM` 產出修正指令，退回 Step 3.2
-  - 如果 `retry_count` >= 3：**HITL-2 中斷** ⚠️ 停下來告知使用者：
-    「任務 {id} 連續失敗 3 次。最後錯誤：{error}。請提供除錯方向，或輸入 'skip' 跳過。」
-- **成功**（`exit_code == 0`）：進入階段 5
-
----
-
-## 階段 5：進度紀錄與迴圈推進
-
-### Step 5.1：標記完成
-`PM` 標記當前任務為 `"done"`。
-
-### Step 5.2：更新進度
-使用 `documenter` 技能（模式 A），更新 `artifacts/progress_log.json`。
-
-### Step 5.3：佇列檢查
-- 如果還有剩餘任務 → 回到階段 2 的 Step 2.2，提取下一項任務
-- 如果佇列已清空 → 進入階段 6
-
----
-
-## 階段 6：結案與文件生成
-
-### Step 6.1：全域掃描
-使用 `documenter` 技能（模式 B），掃描最終程式碼庫。
-
-### Step 6.2：生成文件
-- 生成 `README.md`（人類閱讀用）
-- 生成 `artifacts/system_state.json`（AI 閱讀用）
-
-### Step 6.3：通知完成
-告知使用者：「🎉 專案開發完畢！請查看 `README.md` 與 `artifacts/system_state.json`。」
+- Mode A 必須快速且非阻塞：更新 JSON 後立即返回
+- Mode B 必須完整且精確：花時間掃描所有內容
+- **禁止**憑空捏造資訊，只記錄程式碼庫中實際存在的內容
+- **禁止**在文件中包含任何 secret 或敏感設定值
+- 所有文件必須使用專案規則中指定的語言
+- `unfinished_features`、`technical_debt`、`extension_points` 三個欄位是為**未來 AI 二次開發**設計，必須儘可能詳細填寫

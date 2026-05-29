@@ -1,0 +1,335 @@
+{
+  "project_name": "EcommerceAdminBackend",
+  "tech_stack": {
+    "language": "C#",
+    "framework": ".NET 10 (ASP.NET Core Web API)",
+    "database": "PostgreSQL 16+",
+    "orm": "Entity Framework Core 10.0"
+  },
+  "database_schema": [
+    {
+      "table": "Users",
+      "columns": [
+        { "name": "Id", "type": "uuid", "primary_key": true },
+        { "name": "Username", "type": "varchar(100)", "unique": true, "nullable": false },
+        { "name": "Email", "type": "varchar(255)", "unique": true, "nullable": false },
+        { "name": "PasswordHash", "type": "text", "nullable": false },
+        { "name": "Role", "type": "varchar(50)", "nullable": false },
+        { "name": "CreatedAt", "type": "timestamp with time zone", "nullable": false },
+        { "name": "UpdatedAt", "type": "timestamp with time zone", "nullable": false }
+      ],
+      "indexes": ["idx_users_email", "idx_users_username"]
+    },
+    {
+      "table": "Products",
+      "columns": [
+        { "name": "Id", "type": "uuid", "primary_key": true },
+        { "name": "Name", "type": "varchar(255)", "nullable": false },
+        { "name": "Description", "type": "text", "nullable": true },
+        { "name": "Price", "type": "numeric(18,2)", "nullable": false },
+        { "name": "Stock", "type": "integer", "nullable": false },
+        { "name": "CreatedAt", "type": "timestamp with time zone", "nullable": false },
+        { "name": "UpdatedAt", "type": "timestamp with time zone", "nullable": false }
+      ],
+      "indexes": ["idx_products_name"]
+    },
+    {
+      "table": "Orders",
+      "columns": [
+        { "name": "Id", "type": "uuid", "primary_key": true },
+        { "name": "UserId", "type": "uuid", "foreign_key": { "table": "Users", "column": "Id" }, "nullable": false },
+        { "name": "TotalAmount", "type": "numeric(18,2)", "nullable": false },
+        { "name": "Status", "type": "varchar(50)", "nullable": false },
+        { "name": "CreatedAt", "type": "timestamp with time zone", "nullable": false },
+        { "name": "UpdatedAt", "type": "timestamp with time zone", "nullable": false }
+      ],
+      "indexes": ["idx_orders_userid", "idx_orders_status"]
+    },
+    {
+      "table": "OrderItems",
+      "columns": [
+        { "name": "Id", "type": "uuid", "primary_key": true },
+        { "name": "OrderId", "type": "uuid", "foreign_key": { "table": "Orders", "column": "Id" }, "nullable": false },
+        { "name": "ProductId", "type": "uuid", "foreign_key": { "table": "Products", "column": "Id" }, "nullable": false },
+        { "name": "Quantity", "type": "integer", "nullable": false },
+        { "name": "UnitPrice", "type": "numeric(18,2)", "nullable": false }
+      ],
+      "indexes": ["idx_orderitems_orderid"]
+    }
+  ],
+  "api_specs": [
+    {
+      "id": "API-001",
+      "method": "POST",
+      "path": "/api/auth/register",
+      "description": "註冊新管理員或員工帳號",
+      "request": {
+        "Username": "string",
+        "Email": "string",
+        "Password": "string",
+        "Role": "string (Admin|Staff)"
+      },
+      "response": {
+        "Id": "uuid",
+        "Username": "string",
+        "Email": "string",
+        "Role": "string"
+      },
+      "auth": "none"
+    },
+    {
+      "id": "API-002",
+      "method": "POST",
+      "path": "/api/auth/login",
+      "description": "使用者登入並取得 JWT Token",
+      "request": {
+        "Email": "string",
+        "Password": "string"
+      },
+      "response": {
+        "Token": "string",
+        "ExpiresAt": "timestamp with time zone",
+        "Username": "string",
+        "Role": "string"
+      },
+      "auth": "none"
+    },
+    {
+      "id": "API-003",
+      "method": "GET",
+      "path": "/api/products",
+      "description": "取得商品分頁清單，支援關鍵字搜尋",
+      "request": {
+        "Page": "integer (default 1)",
+        "PageSize": "integer (default 10)",
+        "Keyword": "string (optional)"
+      },
+      "response": {
+        "Items": [
+          {
+            "Id": "uuid",
+            "Name": "string",
+            "Description": "string",
+            "Price": "decimal",
+            "Stock": "integer",
+            "CreatedAt": "timestamp with time zone"
+          }
+        ],
+        "TotalCount": "integer",
+        "Page": "integer",
+        "PageSize": "integer"
+      },
+      "auth": "JWT (Admin|Staff)"
+    },
+    {
+      "id": "API-004",
+      "method": "GET",
+      "path": "/api/products/{id}",
+      "description": "取得單一商品詳細資訊",
+      "request": null,
+      "response": {
+        "Id": "uuid",
+        "Name": "string",
+        "Description": "string",
+        "Price": "decimal",
+        "Stock": "integer",
+        "CreatedAt": "timestamp with time zone",
+        "UpdatedAt": "timestamp with time zone"
+      },
+      "auth": "JWT (Admin|Staff)"
+    },
+    {
+      "id": "API-005",
+      "method": "POST",
+      "path": "/api/products",
+      "description": "新增商品",
+      "request": {
+        "Name": "string",
+        "Description": "string",
+        "Price": "decimal",
+        "Stock": "integer"
+      },
+      "response": {
+        "Id": "uuid",
+        "Name": "string",
+        "Description": "string",
+        "Price": "decimal",
+        "Stock": "integer",
+        "CreatedAt": "timestamp with time zone"
+      },
+      "auth": "JWT (Admin|Staff)"
+    },
+    {
+      "id": "API-006",
+      "method": "PUT",
+      "path": "/api/products/{id}",
+      "description": "更新商品資訊",
+      "request": {
+        "Name": "string",
+        "Description": "string",
+        "Price": "decimal",
+        "Stock": "integer"
+      },
+      "response": {
+        "Id": "uuid",
+        "Name": "string",
+        "Description": "string",
+        "Price": "decimal",
+        "Stock": "integer",
+        "UpdatedAt": "timestamp with time zone"
+      },
+      "auth": "JWT (Admin|Staff)"
+    },
+    {
+      "id": "API-007",
+      "method": "DELETE",
+      "path": "/api/products/{id}",
+      "description": "刪除商品 (軟刪除或硬刪除，此處為硬刪除)",
+      "request": null,
+      "response": {
+        "Success": "boolean"
+      },
+      "auth": "JWT (Admin)"
+    },
+    {
+      "id": "API-008",
+      "method": "POST",
+      "path": "/api/orders",
+      "description": "建立新訂單",
+      "request": {
+        "Items": [
+          {
+            "ProductId": "uuid",
+            "Quantity": "integer"
+          }
+        ]
+      },
+      "response": {
+        "Id": "uuid",
+        "UserId": "uuid",
+        "TotalAmount": "decimal",
+        "Status": "string",
+        "CreatedAt": "timestamp with time zone"
+      },
+      "auth": "JWT (Admin|Staff)"
+    },
+    {
+      "id": "API-009",
+      "method": "GET",
+      "path": "/api/orders",
+      "description": "查詢訂單分頁清單，支援狀態篩選",
+      "request": {
+        "Page": "integer (default 1)",
+        "PageSize": "integer (default 10)",
+        "Status": "string (optional)"
+      },
+      "response": {
+        "Items": [
+          {
+            "Id": "uuid",
+            "UserId": "uuid",
+            "TotalAmount": "decimal",
+            "Status": "string",
+            "CreatedAt": "timestamp with time zone"
+          }
+        ],
+        "TotalCount": "integer",
+        "Page": "integer",
+        "PageSize": "integer"
+      },
+      "auth": "JWT (Admin|Staff)"
+    },
+    {
+      "id": "API-010",
+      "method": "GET",
+      "path": "/api/orders/{id}",
+      "description": "取得單一訂單詳細資訊（包含訂單項目）",
+      "request": null,
+      "response": {
+        "Id": "uuid",
+        "UserId": "uuid",
+        "TotalAmount": "decimal",
+        "Status": "string",
+        "CreatedAt": "timestamp with time zone",
+        "UpdatedAt": "timestamp with time zone",
+        "Items": [
+          {
+            "ProductId": "uuid",
+            "ProductName": "string",
+            "Quantity": "integer",
+            "UnitPrice": "decimal"
+          }
+        ]
+      },
+      "auth": "JWT (Admin|Staff)"
+    },
+    {
+      "id": "API-011",
+      "method": "PATCH",
+      "path": "/api/orders/{id}/status",
+      "description": "更新訂單狀態",
+      "request": {
+        "Status": "string (Pending|Processing|Shipped|Delivered|Cancelled)"
+      },
+      "response": {
+        "Id": "uuid",
+        "Status": "string",
+        "UpdatedAt": "timestamp with time zone"
+      },
+      "auth": "JWT (Admin|Staff)"
+    },
+    {
+      "id": "API-012",
+      "method": "GET",
+      "path": "/api/reports/sales",
+      "description": "取得銷售報表摘要",
+      "request": {
+        "StartDate": "timestamp with time zone (optional)",
+        "EndDate": "timestamp with time zone (optional)"
+      },
+      "response": {
+        "TotalRevenue": "decimal",
+        "TotalOrders": "integer",
+        "AverageOrderValue": "decimal",
+        "TopSellingProducts": [
+          {
+            "ProductId": "uuid",
+            "ProductName": "string",
+            "TotalQuantitySold": "integer",
+            "TotalRevenueGenerated": "decimal"
+          }
+        ]
+      },
+      "auth": "JWT (Admin)"
+    }
+  ],
+  "dependencies": [
+    { "name": "Microsoft.EntityFrameworkCore", "version": "10.0.0-preview.1.25080.9" },
+    { "name": "Npgsql.EntityFrameworkCore.PostgreSQL", "version": "10.0.0-preview.1" },
+    { "name": "Microsoft.AspNetCore.Authentication.JwtBearer", "version": "10.0.0-preview.1.25080.9" },
+    { "name": "System.IdentityModel.Tokens.Jwt", "version": "8.5.0" },
+    { "name": "BCrypt.Net-Next", "version": "4.0.3" }
+  ],
+  "adr": [
+    {
+      "decision": "使用 .NET 10 (ASP.NET Core Web API) 與 Controller-based 結構",
+      "rationale": "考慮到後台管理系統功能擴展性與維護性，採用標準控制器結構（Controller-based）搭配依賴注入，能更清晰地切分商業邏輯、控制層與資料庫存取層，比起 Minimal APIs 更適合此類型的企業級管理系統。",
+      "alternatives": ["Minimal APIs", "ASP.NET Core Razor Pages"]
+    },
+    {
+      "decision": "實作 Repository Pattern 分離資料存取",
+      "rationale": "符合專案規範偏好，隔離 EF Core `DbContext` 的直接操作，便於進行單元測試（Unit Testing）及未來資料庫抽換可能性，所有資料查詢與異動皆須透過 Repository 定義。",
+      "alternatives": ["直接在 Controller / Service 中注入 DbContext"]
+    },
+    {
+      "decision": "使用 JWT 無狀態憑證進行認證與 Role-based 授權",
+      "rationale": "JWT 認證機制免去了後端維護 Session 的開銷，且能夠將使用者的 Role（Admin/Staff）寫入 Claim 中，便於實作基於角色的授權機制（[Authorize(Roles = \"Admin\")]）。",
+      "alternatives": ["Cookie-based Authentication", "Session-based Authentication"]
+    },
+    {
+      "decision": "採用 UUID 作為資料表主鍵 (Primary Key)",
+      "rationale": "使用 UUID 可以避免自增整數（ID）帶來的 ID 預測攻擊風險，同時更易於分散式架構與資料合併，且對 PostgreSQL 而言，UUID 支援十分完善。",
+      "alternatives": ["自增整數 ID (BigInteger)"]
+    }
+  ]
+}
