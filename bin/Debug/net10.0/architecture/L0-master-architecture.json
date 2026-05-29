@@ -1,0 +1,253 @@
+{
+  "meta": {
+    "document_type": "architecture",
+    "level": "L0",
+    "version": "1.0",
+    "created_at": "2026-05-29T11:15:00Z",
+    "parent": null,
+    "project_scale": "medium",
+    "project_type": "fullstack"
+  },
+  "project_name": "EAM_Company_Asset_Management_System",
+  "overview": "公司資產管理系統 (EAM) 提供資產分類、資產主檔維護、倉庫與儲位管理、庫存管理，並使用 Cookie 單一登入驗證（時效 5 分鐘，接收外部系統 Cookie）與 jQuery 前端驗證，具備完整的異動追蹤與邏輯刪除機制。",
+  "tech_stack": {
+    "project_type": "fullstack",
+    "primary_language": "C# 14",
+    "framework": "ASP.NET Core 10.0 MVC",
+    "database": "SQL Server",
+    "orm": "Entity Framework Core 10.0",
+    "auth": "ASP.NET Core Cookie Authentication (自訂 Cookie 名稱，5分鐘時效，Claims 含工號與姓名)",
+    "api_style": "REST",
+    "ui_framework": "Bootstrap 5",
+    "styling": "Vanilla CSS & Bootstrap 5",
+    "state_management": "Server-side Session/Claims",
+    "additional": {
+      "js_library": "jQuery 3.7.1",
+      "validation": "jQuery Validation Plugin"
+    }
+  },
+  "modules": [
+    {
+      "id": "MOD-001",
+      "name": "Auth Module (身分驗證與模擬器)",
+      "description": "負責處理 Cookie 驗證，設定過期時間 5 分鐘，並提供開發模擬頁面以便寫入工號與姓名 Claims 的驗證 Cookie。",
+      "architecture_file": "auth/L1-auth-architecture.json",
+      "priority": 1,
+      "status": "pending",
+      "dependencies": []
+    },
+    {
+      "id": "MOD-002",
+      "name": "Asset Module (資產分類與主檔)",
+      "description": "管理大類、次類、品名、單位、資產基本資訊，並提供資材物料編碼自動生成引擎 (格式：大類代碼-次類代碼-品名代號-4位流水號)。",
+      "architecture_file": "asset/L1-asset-architecture.json",
+      "priority": 2,
+      "status": "pending",
+      "dependencies": ["MOD-001"]
+    },
+    {
+      "id": "MOD-003",
+      "name": "Warehouse Module (倉庫與儲位)",
+      "description": "管理資材室與儲位（儲位歸屬於資材室），提供關聯 CRUD 與下拉連動。",
+      "architecture_file": "warehouse/L1-warehouse-architecture.json",
+      "priority": 3,
+      "status": "pending",
+      "dependencies": ["MOD-001"]
+    },
+    {
+      "id": "MOD-004",
+      "name": "Inventory Module (庫存管理)",
+      "description": "整合資產與儲位，記錄與異動庫存數量，提供一目了然的庫存一覽表查詢介面。",
+      "architecture_file": "inventory/L1-inventory-architecture.json",
+      "priority": 4,
+      "status": "pending",
+      "dependencies": ["MOD-001", "MOD-002", "MOD-003"]
+    }
+  ],
+  "cross_module_contracts": [
+    {
+      "from": "MOD-001",
+      "to": "MOD-002",
+      "event_or_api": "HttpContext.User.Claims",
+      "description": "資產主檔模組需要從登入 Cookie 中取得建立人與修改人姓名/工號。",
+      "mechanism": "Shared Claims Principal"
+    },
+    {
+      "from": "MOD-001",
+      "to": "MOD-003",
+      "event_or_api": "HttpContext.User.Claims",
+      "description": "倉庫儲位模組需要從登入 Cookie 中取得建立人與修改人姓名/工號。",
+      "mechanism": "Shared Claims Principal"
+    },
+    {
+      "from": "MOD-001",
+      "to": "MOD-004",
+      "event_or_api": "HttpContext.User.Claims",
+      "description": "庫存管理模組需要從登入 Cookie 中取得建立人與修改人姓名/工號。",
+      "mechanism": "Shared Claims Principal"
+    },
+    {
+      "from": "MOD-002",
+      "to": "MOD-004",
+      "event_or_api": "Asset Data Access",
+      "description": "庫存模組需要引用資產基本資訊與物料編碼進行庫存顯示。",
+      "mechanism": "Shared DB"
+    },
+    {
+      "from": "MOD-003",
+      "to": "MOD-004",
+      "event_or_api": "Storage Location Data Access",
+      "description": "庫存模組需要引用儲位與資材室資訊進行庫存存放位置顯示。",
+      "mechanism": "Shared DB"
+    }
+  ],
+  "shared_infrastructure": {
+    "auth": "Cookie Authentication (名稱: EAM_AUTH_COOKIE, 時效: 5分鐘, 夾帶 Claims: EmployeeNo, EmployeeName)",
+    "logging": "ASP.NET Core Built-in Logging (Console & Debug)",
+    "caching": "None",
+    "monitoring": "None"
+  },
+  "database_schema": [
+    {
+      "table": "MajorCategories",
+      "description": "資產大類表",
+      "columns": [
+        { "name": "Id", "type": "int", "primary_key": true, "nullable": false, "unique": true, "foreign_key": null, "description": "流水主鍵" },
+        { "name": "Code", "type": "varchar(50)", "primary_key": false, "nullable": false, "unique": true, "foreign_key": null, "description": "大類代號 (如: CH)" },
+        { "name": "Name", "type": "nvarchar(100)", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "大類名稱" },
+        { "name": "CreatedBy", "type": "nvarchar(100)", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "建立人" },
+        { "name": "CreatedTime", "type": "datetime2", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "建立時間" },
+        { "name": "UpdatedBy", "type": "nvarchar(100)", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "修改人" },
+        { "name": "UpdatedTime", "type": "datetime2", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "修改時間" },
+        { "name": "IsActive", "type": "bit", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "停用/啟用 (邏輯刪除)" }
+      ],
+      "indexes": ["IX_MajorCategories_Code"]
+    },
+    {
+      "table": "MinorCategories",
+      "description": "資產次類表",
+      "columns": [
+        { "name": "Id", "type": "int", "primary_key": true, "nullable": false, "unique": true, "foreign_key": null, "description": "流水主鍵" },
+        { "name": "MajorCategoryId", "type": "int", "primary_key": false, "nullable": false, "unique": false, "foreign_key": "MajorCategories.Id", "description": "所屬大類Id" },
+        { "name": "Code", "type": "varchar(50)", "primary_key": false, "nullable": false, "unique": true, "foreign_key": null, "description": "次類代號 (如: L1)" },
+        { "name": "Name", "type": "nvarchar(100)", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "次類名稱" },
+        { "name": "CreatedBy", "type": "nvarchar(100)", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "建立人" },
+        { "name": "CreatedTime", "type": "datetime2", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "建立時間" },
+        { "name": "UpdatedBy", "type": "nvarchar(100)", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "修改人" },
+        { "name": "UpdatedTime", "type": "datetime2", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "修改時間" },
+        { "name": "IsActive", "type": "bit", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "停用/啟用 (邏輯刪除)" }
+      ],
+      "indexes": ["IX_MinorCategories_Code", "IX_MinorCategories_MajorCategoryId"]
+    },
+    {
+      "table": "ItemNames",
+      "description": "品名主檔表",
+      "columns": [
+        { "name": "Id", "type": "int", "primary_key": true, "nullable": false, "unique": true, "foreign_key": null, "description": "流水主鍵" },
+        { "name": "MinorCategoryId", "type": "int", "primary_key": false, "nullable": false, "unique": false, "foreign_key": "MinorCategories.Id", "description": "所屬次類Id" },
+        { "name": "Code", "type": "varchar(50)", "primary_key": false, "nullable": false, "unique": true, "foreign_key": null, "description": "品名代碼 (如: 001)" },
+        { "name": "Name", "type": "nvarchar(100)", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "品名名稱" },
+        { "name": "CreatedBy", "type": "nvarchar(100)", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "建立人" },
+        { "name": "CreatedTime", "type": "datetime2", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "建立時間" },
+        { "name": "UpdatedBy", "type": "nvarchar(100)", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "修改人" },
+        { "name": "UpdatedTime", "type": "datetime2", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "修改時間" },
+        { "name": "IsActive", "type": "bit", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "停用/啟用 (邏輯刪除)" }
+      ],
+      "indexes": ["IX_ItemNames_Code", "IX_ItemNames_MinorCategoryId"]
+    },
+    {
+      "table": "Units",
+      "description": "單位主檔表",
+      "columns": [
+        { "name": "Id", "type": "int", "primary_key": true, "nullable": false, "unique": true, "foreign_key": null, "description": "流水主鍵" },
+        { "name": "Code", "type": "varchar(50)", "primary_key": false, "nullable": false, "unique": true, "foreign_key": null, "description": "單位代碼 (如: PC, SET)" },
+        { "name": "Name", "type": "nvarchar(50)", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "單位名稱 (如: 台, 個, 套)" },
+        { "name": "CreatedBy", "type": "nvarchar(100)", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "建立人" },
+        { "name": "CreatedTime", "type": "datetime2", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "建立時間" },
+        { "name": "UpdatedBy", "type": "nvarchar(100)", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "修改人" },
+        { "name": "UpdatedTime", "type": "datetime2", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "修改時間" },
+        { "name": "IsActive", "type": "bit", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "停用/啟用 (邏輯刪除)" }
+      ],
+      "indexes": ["IX_Units_Code"]
+    },
+    {
+      "table": "Assets",
+      "description": "資產基本資訊表 (資產主檔)",
+      "columns": [
+        { "name": "Id", "type": "int", "primary_key": true, "nullable": false, "unique": true, "foreign_key": null, "description": "流水主鍵" },
+        { "name": "ItemNameId", "type": "int", "primary_key": false, "nullable": false, "unique": false, "foreign_key": "ItemNames.Id", "description": "所屬品名Id" },
+        { "name": "UnitId", "type": "int", "primary_key": false, "nullable": false, "unique": false, "foreign_key": "Units.Id", "description": "單位Id" },
+        { "name": "DefaultStorageLocationId", "type": "int", "primary_key": false, "nullable": true, "unique": false, "foreign_key": "StorageLocations.Id", "description": "預設存放儲位Id" },
+        { "name": "Model", "type": "nvarchar(100)", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "型號" },
+        { "name": "Brand", "type": "nvarchar(100)", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "廠牌" },
+        { "name": "MaterialCode", "type": "varchar(100)", "primary_key": false, "nullable": false, "unique": true, "foreign_key": null, "description": "系統自動產生之物料編碼 (CH-L1-001-0001)" },
+        { "name": "CreatedBy", "type": "nvarchar(100)", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "建立人" },
+        { "name": "CreatedTime", "type": "datetime2", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "建立時間" },
+        { "name": "UpdatedBy", "type": "nvarchar(100)", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "修改人" },
+        { "name": "UpdatedTime", "type": "datetime2", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "修改時間" },
+        { "name": "IsActive", "type": "bit", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "停用/啟用 (邏輯刪除)" }
+      ],
+      "indexes": ["IX_Assets_MaterialCode", "IX_Assets_ItemNameId", "IX_Assets_UnitId", "IX_Assets_DefaultStorageLocationId"]
+    },
+    {
+      "table": "Warehouses",
+      "description": "資材室主檔表",
+      "columns": [
+        { "name": "Id", "type": "int", "primary_key": true, "nullable": false, "unique": true, "foreign_key": null, "description": "流水主鍵" },
+        { "name": "Code", "type": "varchar(50)", "primary_key": false, "nullable": false, "unique": true, "foreign_key": null, "description": "資材室代碼" },
+        { "name": "Name", "type": "nvarchar(100)", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "資材室名稱" },
+        { "name": "CreatedBy", "type": "nvarchar(100)", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "建立人" },
+        { "name": "CreatedTime", "type": "datetime2", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "建立時間" },
+        { "name": "UpdatedBy", "type": "nvarchar(100)", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "修改人" },
+        { "name": "UpdatedTime", "type": "datetime2", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "修改時間" },
+        { "name": "IsActive", "type": "bit", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "停用/啟用 (邏輯刪除)" }
+      ],
+      "indexes": ["IX_Warehouses_Code"]
+    },
+    {
+      "table": "StorageLocations",
+      "description": "儲位主檔表",
+      "columns": [
+        { "name": "Id", "type": "int", "primary_key": true, "nullable": false, "unique": true, "foreign_key": null, "description": "流水主鍵" },
+        { "name": "WarehouseId", "type": "int", "primary_key": false, "nullable": false, "unique": false, "foreign_key": "Warehouses.Id", "description": "所屬資材室Id" },
+        { "name": "Code", "type": "varchar(50)", "primary_key": false, "nullable": false, "unique": true, "foreign_key": null, "description": "儲位代號" },
+        { "name": "Name", "type": "nvarchar(100)", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "儲位名稱" },
+        { "name": "CreatedBy", "type": "nvarchar(100)", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "建立人" },
+        { "name": "CreatedTime", "type": "datetime2", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "建立時間" },
+        { "name": "UpdatedBy", "type": "nvarchar(100)", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "修改人" },
+        { "name": "UpdatedTime", "type": "datetime2", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "修改時間" },
+        { "name": "IsActive", "type": "bit", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "停用/啟用 (邏輯刪除)" }
+      ],
+      "indexes": ["IX_StorageLocations_Code", "IX_StorageLocations_WarehouseId"]
+    },
+    {
+      "table": "Inventories",
+      "description": "庫存表",
+      "columns": [
+        { "name": "Id", "type": "int", "primary_key": true, "nullable": false, "unique": true, "foreign_key": null, "description": "流水主鍵" },
+        { "name": "AssetId", "type": "int", "primary_key": false, "nullable": false, "unique": false, "foreign_key": "Assets.Id", "description": "資產Id" },
+        { "name": "StorageLocationId", "type": "int", "primary_key": false, "nullable": false, "unique": false, "foreign_key": "StorageLocations.Id", "description": "儲位Id" },
+        { "name": "Quantity", "type": "int", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "庫存數量" },
+        { "name": "CreatedBy", "type": "nvarchar(100)", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "建立人" },
+        { "name": "CreatedTime", "type": "datetime2", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "建立時間" },
+        { "name": "UpdatedBy", "type": "nvarchar(100)", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "修改人" },
+        { "name": "UpdatedTime", "type": "datetime2", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "最後異動時間" },
+        { "name": "IsActive", "type": "bit", "primary_key": false, "nullable": false, "unique": false, "foreign_key": null, "description": "停用/啟用 (邏輯刪除)" }
+      ],
+      "indexes": ["IX_Inventories_AssetId_StorageLocationId"]
+    }
+  ],
+  "api_specs": [],
+  "extension_points": [
+    {
+      "id": "EXT-001",
+      "location": "AssetService.cs",
+      "description": "可自訂物料編碼的前綴、長度或流水號產生規則，以利未來對接其他編碼格式。"
+    },
+    {
+      "id": "EXT-002",
+      "location": "Program.cs (Cookie Auth Config)",
+      "description": "未來若需升級為 JWT、OAuth 2.0 或 OIDC 單一登入，可直接於 Program.cs 中抽換 Authentication Scheme。"
+    }
+  ]
+}
