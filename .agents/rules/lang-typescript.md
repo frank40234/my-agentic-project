@@ -1,7 +1,6 @@
 ---
-name: lang-typescript
+trigger: model_decision
 description: "TypeScript 語言慣用規範。涵蓋嚴格模式、型別系統、ESLint、React/Node.js 慣例。"
-alwaysApply: false
 ---
 
 # TypeScript 語言慣用規範

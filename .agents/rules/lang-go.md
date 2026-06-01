@@ -1,7 +1,6 @@
 ---
-name: lang-go
+trigger: model_decision
 description: "Go 語言慣用規範。涵蓋 gofmt、錯誤處理、並行處理、專案結構等最佳實踐。"
-alwaysApply: false
 ---
 
 # Go 語言慣用規範

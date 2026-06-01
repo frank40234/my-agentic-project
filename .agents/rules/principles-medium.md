@@ -1,7 +1,6 @@
 ---
-name: principles-medium
+trigger: model_decision
 description: "中型專案開發原則。適用於多模組、需要長期維護的專案。平衡架構嚴謹度與開發速度。"
-alwaysApply: false
 ---
 
 # 中型專案開發原則

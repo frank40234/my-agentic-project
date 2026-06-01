@@ -1,7 +1,6 @@
 ---
-name: domain-web-api
+trigger: model_decision
 description: "Web API 領域開發規範。涵蓋 RESTful 設計、HTTP 狀態碼、驗證授權、API 版本控制等。"
-alwaysApply: false
 ---
 
 # Web API 領域開發規範

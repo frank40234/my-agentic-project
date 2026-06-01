@@ -1,7 +1,6 @@
 ---
-name: principles-small
+trigger: model_decision
 description: "小型專案開發原則。適用於功能單純、模組數量少的專案。強調簡單、快速交付。"
-alwaysApply: false
 ---
 
 # 小型專案開發原則

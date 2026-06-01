@@ -1,7 +1,6 @@
 ---
-name: domain-game-dev
+trigger: model_decision
 description: "遊戲開發領域規範。涵蓋 ECS 架構、遊戲迴圈、資源管理、效能最佳化等。"
-alwaysApply: false
 ---
 
 # 遊戲開發領域規範

@@ -1,7 +1,6 @@
 ---
-name: lang-python
+trigger: model_decision
 description: "Python 語言慣用規範。涵蓋 PEP 8、型別提示、虛擬環境、測試框架等最佳實踐。"
-alwaysApply: false
 ---
 
 # Python 語言慣用規範

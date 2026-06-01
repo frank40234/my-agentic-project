@@ -1,7 +1,6 @@
 ---
-name: lang-csharp
+trigger: model_decision
 description: "C# / .NET 語言慣用規範。涵蓋命名、async/await、LINQ、EF Core 等最佳實踐。"
-alwaysApply: false
 ---
 
 # C# / .NET 語言慣用規範

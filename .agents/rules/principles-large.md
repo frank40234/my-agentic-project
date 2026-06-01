@@ -1,7 +1,6 @@
 ---
-name: principles-large
+trigger: model_decision
 description: "大型專案開發原則。適用於企業級、多團隊、長生命週期的專案。完整套用 SOLID、DDD 與 Clean Architecture。"
-alwaysApply: false
 ---
 
 # 大型專案開發原則
