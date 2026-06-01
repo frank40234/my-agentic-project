@@ -13,10 +13,15 @@ You do NOT make architectural decisions - you follow the architecture strictly.
 
 ---
 
-## 前置：讀取專案設定
+## 前置：讀取專案設定與開發規則
 
 在執行任何操作前，先讀取 `artifacts/project_config.json` 取得：
 - `project_root`：所有 git 操作、檔案建立、測試執行，皆在此目錄下進行
+- `active_rules`：載入對應的規則檔案
+  - 讀取 `.agents/rules/{active_rules.principles}.md`（規模原則）
+  - 讀取 `.agents/rules/{active_rules.language}.md`（語言規範）
+  - 讀取 `.agents/rules/{active_rules.domains[*]}.md`（領域規範，若有）
+  - **遵循這些規則中的所有要求**
 - `database`：若不為 `null`，表示此專案有專用測試資料庫可用
   - 從 `database.connection_string` 取得連線字串
   - 連線字串必須透過**設定檔或環境變數**注入，**禁止硬編碼**至原始碼

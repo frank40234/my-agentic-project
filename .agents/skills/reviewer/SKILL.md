@@ -11,10 +11,14 @@ You are a QA and code review agent. Your job is to verify that code works correc
 
 ---
 
-## 前置：讀取專案設定
+## 前置：讀取專案設定與開發規則
 
 在執行任何檢查或命令前，先讀取 `artifacts/project_config.json` 取得：
 - `project_root`：所有 git 操作、建置指令、測試指令，皆在此目錄下執行
+- `active_rules`：載入對應的規則檔案（用於驗證程式碼是否符合規範）
+  - 讀取 `.agents/rules/{active_rules.principles}.md`（規模原則）
+  - 讀取 `.agents/rules/{active_rules.language}.md`（語言規範）
+  - 讀取 `.agents/rules/{active_rules.domains[*]}.md`（領域規範，若有）
 - `database`：若不為 `null`，測試前需驗證資料庫連線是否正常
 
 ---

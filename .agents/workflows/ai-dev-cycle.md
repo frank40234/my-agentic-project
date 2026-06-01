@@ -17,15 +17,21 @@ description: "Universal AI Coding Agentic development cycle. Automatically adapt
 1. 分析需求
 2. 判斷專案規模（small / medium / large）
 3. 決定專案名稱（英文小寫 + 連字號）
-4. 以**純文字摘要**呈現規劃草案（專案名稱、模組清單、技術決策、預計文件清單）
-5. **不寫入任何檔案**
+4. 根據規模與技術棧，**自動推薦適用的開發規則**：
+   - 規模原則：`principles-{small|medium|large}`
+   - 語言規範：`lang-{csharp|python|typescript|go}`
+   - 領域規範：`domain-{web-api|game-dev}`（可選，視專案類型而定）
+5. 以**純文字摘要**呈現規劃草案，包含：
+   - 專案名稱、模組清單、技術決策、預計文件清單
+   - **📐 自動套用的開發規則**（列出推薦的規則檔名與說明）
+6. **不寫入任何檔案**
 
 ### Step 0.3: 人工確認草案（HITL-0a）
 **停止**。Architect 已呈現草案，等待使用者確認：
-> 「以上為架構規劃草案，請確認。輸入 **approve** 開始建立專案，或提供修改意見。」
+> 「以上為架構規劃草案（含開發規則推薦），請確認。輸入 **approve** 開始建立專案，或提供修改意見。」
 
-- 若核准 → 進入 Step 0.4
-- 若提供意見 → Architect 修改草案後重新呈現
+- 若核准 → 進入 Phase 1
+- 若提供意見（含調整規則選擇）→ Architect 修改草案後重新呈現
 
 ---
 
@@ -58,7 +64,7 @@ mkdir -p {project_root}
 # 初始化 Git（若使用者同意）
 cd {project_root}
 git init
-git commit --allow-empty -m "chore: init project repository"
+git commit --allow-empty -m "chore: 初始化專案儲存庫"
 ```
 
 ### Step 1.3: 寫入專案設定檔
@@ -71,11 +77,16 @@ git commit --allow-empty -m "chore: init project repository"
   "project_root": "{絕對路徑}",
   "git_initialized": true,
   "created_at": "ISO-8601 timestamp",
+  "active_rules": {
+    "principles": "principles-{small|medium|large}",
+    "language": "lang-{language}",
+    "domains": ["domain-{domain}"]
+  },
   "database": null
 }
 ```
 
-> `database` 欄位在 Step 1.4 中根據需求決定是否填入。
+> `active_rules` 來自 HITL-0a 核准的草案。所有 Agent（Coder、Reviewer）在前置步驟中讀取此欄位，並載入對應的 `.agents/rules/` 規則檔。
 
 ### Step 1.4: 建立測試資料庫（若專案需要）
 
@@ -138,7 +149,7 @@ Small 專案直接跳至 Phase 3。
 - status 為 `"pending"`
 - 所有依賴模組的 status 為 `"done"`
 
-> Large 專案的 L2 子模組設計已於 Step 1.4 一次全部產出，此處**不需要**額外確認，直接進入任務分解。
+> Large 專案的 L2 子模組設計已於 Step 1.5 一次全部產出，此處**不需要**額外確認，直接進入任務分解。
 
 ---
 
@@ -158,14 +169,15 @@ Small 專案直接跳至 Phase 3。
 ## Phase 4: 開發實作
 
 ### Step 4.1: 建立 Branch
-呼叫 `coder` skill。Coder 讀取 `artifacts/project_config.json` 取得 `project_root`，並在該目錄下建立隔離的 Git branch。
+呼叫 `coder` skill。Coder 讀取 `artifacts/project_config.json` 取得 `project_root` 與 `active_rules`，載入對應的規則檔案，並在 `project_root` 下建立隔離的 Git branch。
 
 ### Step 4.2: 實作
-Coder 依任務描述與相關架構實作功能。
+Coder 依任務描述、相關架構與**載入的開發規則**實作功能。
 
 **記憶體管理原則**：只提供 Coder：
 - 與此任務相關的架構摘要
 - 當前任務細節
+- 適用的開發規則檔案內容
 - 若為重試，提供錯誤日誌
 
 **不得**提供其他任務的上下文或不相關模組的架構。
@@ -200,16 +212,33 @@ PM 分析錯誤，產生修正指示，將任務送回 Coder。
 
 ---
 
-## Phase 6: 進度更新與循環
+## Phase 6: 合併、進度更新與循環
 
-### Step 6.1: 更新任務狀態
+### Step 6.1: 合併分支回 main
+
+若任務狀態為 `"done"`（測試通過），自動將任務分支合併回 `main`：
+
+```bash
+cd {project_root}
+git checkout main
+git merge --no-ff feature/task-{id} -m "merge(TASK-{id}): 合併 {任務標題}"
+git branch -d feature/task-{id}
+```
+
+若合併發生衝突：
+1. Agent 嘗試自動解決衝突
+2. 若無法自動解決，觸發 HITL-2 請使用者介入
+
+若任務狀態為 `"skipped"`，跳過合併。
+
+### Step 6.2: 更新任務狀態
 PM 將當前任務標記為 `"done"`（或 `"skipped"`）於 `{project_root}/artifacts/task_queue.json`。
 
-### Step 6.2: 更新進度日誌
+### Step 6.3: 更新進度日誌
 呼叫 `documenter` skill（Mode A）更新 `{project_root}/artifacts/progress_log.json`。
 此為非同步背景操作，不需等待完成。
 
-### Step 6.3: 判斷下一步
+### Step 6.4: 判斷下一步
 檢查剩餘項目：
 
 - **當前模組 / 專案還有更多任務？**

@@ -56,3 +56,19 @@ alwaysApply: true
 - 不預設任何特定技術棧、框架或專案類型
 - 技術棧欄位依專案類型動態調整
 - 支援的專案類型：後端 API、前端 SPA、全端、行動 App、CLI、資料工程、嵌入式、桌面應用
+
+## 規則選擇機制
+每個專案在 `project_config.json` 的 `active_rules` 中記錄適用的規則：
+- `principles`：規模原則（`principles-small` / `principles-medium` / `principles-large`）
+- `language`：語言規範（`lang-csharp` / `lang-python` / `lang-typescript` / `lang-go`）
+- `domains`：領域規範（`domain-web-api` / `domain-game-dev`，可多選）
+
+規則由 Architect 在 Phase 0 自動推薦，經使用者在 HITL-0a 確認後寫入。
+所有規則檔案位於 `.agents/rules/`，設定 `alwaysApply: false`，由各 Agent 依 `active_rules` 動態載入。
+
+## Git 分支策略
+- 每個任務建立 `feature/task-{id}` 分支
+- 測試通過後自動合併回 `main`（`git merge --no-ff`）
+- 合併後自動刪除任務分支
+- 合併衝突無法自動解決時觸發 HITL-2
+- `main` 分支始終保持可建置、可測試的狀態
